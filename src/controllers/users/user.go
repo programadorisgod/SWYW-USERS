@@ -41,12 +41,12 @@ func CreateUser(c *fiber.Ctx) error {
 		})
 	}
 
-	id, error := usersServices.SaveUser(&req)
+	id, saveError := usersServices.SaveUser(&req)
 
-	if error != nil {
+	if saveError != nil {
 		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Could not create user",
-			"e":     err.Error(),
+			"e":     saveError.Error(),
 		})
 	}
 
