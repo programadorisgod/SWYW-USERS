@@ -14,26 +14,11 @@ RUN go mod download
 
 COPY . .
 
-# BUILD MAIN BINARY
-RUN go build -o user-service main.go
 
-
-RUN apk update && apk add --no-cache ca-certificates && \
-    apk add --no-cache wget
-
-
-
-#STAGE 2
-
-FROM alpine:3.19
-
-RUN apk update && apk add --no-cache ca-certificates && \
-    apk add --no-cache wget
-
-WORKDIR /root/
-
-COPY --from=builder /app/user-service .
 
 EXPOSE 5002
 
-CMD [ "./user-service" ]
+RUN apk update && apk add --no-cache ca-certificates && \
+    apk add --no-cache wget
+
+CMD ["air", "-c", ".air.toml"]
