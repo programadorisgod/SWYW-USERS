@@ -4,8 +4,10 @@ import (
 	"database/sql"
 	"swyw-users/src/config"
 	user "swyw-users/src/models/users"
-	messageError "swyw-users/src/utils/Error"
 	passwordHashing "swyw-users/src/utils/crypto"
+	logger "swyw-users/src/utils/logs"
+
+	"go.uber.org/zap"
 )
 
 func SaveUser(u *user.UserRegister) (int, error) {
@@ -14,7 +16,8 @@ func SaveUser(u *user.UserRegister) (int, error) {
 	hashPassword, errHashing := passwordHashing.HashPassword(u.Pass)
 
 	if errHashing != nil {
-		return 0, messageError.ErrorHashingPassord
+		logger.Log.Error("Error hashing password", zap.Error(errHashing))
+		return 0, errHashing
 	}
 
 	err := config.DB.QueryRow(
@@ -23,9 +26,8 @@ func SaveUser(u *user.UserRegister) (int, error) {
 	).Scan(&id)
 
 	if err != nil {
-		//Todo: ADD LOGGER
 
-		return 0, messageError.ErrSearchingForUser
+		return 0, err
 	}
 
 	return id, nil
@@ -44,8 +46,8 @@ func FindUser(email string) (*user.User, error) {
 	}
 
 	if err != nil {
-		//Todo: ADD LOGGER
-		return nil, messageError.ErrSearchingForUser
+
+		return nil, err
 	}
 
 	return &u, nil

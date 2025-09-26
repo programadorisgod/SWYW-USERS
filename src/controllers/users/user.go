@@ -1,13 +1,15 @@
 package userController
 
 import (
-	"log"
 	"net/http"
 	user "swyw-users/src/models/users"
 	usersServices "swyw-users/src/services/users"
+	messageError "swyw-users/src/utils/Error"
 	passwordHashing "swyw-users/src/utils/crypto"
+	logger "swyw-users/src/utils/logs"
 
 	"github.com/gofiber/fiber/v2"
+	"go.uber.org/zap"
 )
 
 func CreateUser(c *fiber.Ctx) error {
@@ -15,12 +17,14 @@ func CreateUser(c *fiber.Ctx) error {
 	var req user.UserRegister
 
 	if err := c.BodyParser(&req); err != nil {
+		logger.Log.Warn("Invalid request body", zap.Error(err))
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid request body",
 		})
 	}
 	//TODO: create a middleware to validation
 	if req.Email == "" || req.Pass == "" || req.Name == "" {
+
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
 			"error": "Email, password and name are required",
 		})
@@ -29,13 +33,16 @@ func CreateUser(c *fiber.Ctx) error {
 	u, err := usersServices.FindUser(req.Email)
 
 	if err != nil {
+		logger.Log.Error("Error searching for user",
+			zap.Error(err))
 		return c.Status(http.StatusInternalServerError).
 			JSON(fiber.Map{
-				"error": err.Error(),
+				"error": messageError.ErrSearchingForUser,
 			})
 	}
 
 	if u != nil {
+		logger.Log.Warn("Error saving user, user exits", zap.String("userEmail", req.Email))
 		return c.Status(http.StatusConflict).JSON(fiber.Map{
 			"error": "User already exists",
 		})
@@ -44,12 +51,14 @@ func CreateUser(c *fiber.Ctx) error {
 	id, saveError := usersServices.SaveUser(&req)
 
 	if saveError != nil {
+		logger.Log.Error("Error saving user",
+			zap.Error(err))
 		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Could not create user",
-			"e":     saveError.Error(),
+			"error": messageError.ErrInsertUser,
 		})
 	}
 
+	logger.Log.Info("User created", zap.Int("userId", id), zap.String("email", req.Email))
 	return c.Status(http.StatusCreated).JSON(fiber.Map{
 		"id": id,
 	})
@@ -68,9 +77,12 @@ func AuthenticateUser(c *fiber.Ctx) error {
 	u, err := usersServices.FindUser(req.Email)
 
 	if err != nil {
-		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{
-			"error": "error searching user",
-		})
+		logger.Log.Error("Error searching for user",
+			zap.Error(err))
+		return c.Status(http.StatusInternalServerError).
+			JSON(fiber.Map{
+				"error": messageError.ErrSearchingForUser,
+			})
 	}
 
 	if u == nil {
@@ -80,7 +92,6 @@ func AuthenticateUser(c *fiber.Ctx) error {
 	}
 
 	if !passwordHashing.VerifyPassword(req.Pass, u.Pass) {
-		log.Printf("Intento de login fallido para el email: %s. Email enviado: %s, Email esperado: %s, Pass enviada: %s, Pass esperada: %s", req.Email, req.Email, u.Email, req.Pass, u.Pass)
 		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{
 			"error": "invalid credentials",
 		})
@@ -93,6 +104,7 @@ func AuthenticateUser(c *fiber.Ctx) error {
 		Create_at: u.Create_at,
 	}
 
+	logger.Log.Info("User login", zap.String("userEmail", userResp.Email))
 	return c.Status(http.StatusOK).JSON(fiber.Map{
 		"user": userResp,
 	})
