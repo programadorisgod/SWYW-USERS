@@ -1,12 +1,11 @@
 package userController
 
 import (
-	"database/sql"
-	"fmt"
 	"log"
 	"net/http"
 	user "swyw-users/src/models/users"
 	usersServices "swyw-users/src/services/users"
+	passwordHashing "swyw-users/src/utils/crypto"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -20,7 +19,7 @@ func CreateUser(c *fiber.Ctx) error {
 			"error": "Invalid request body",
 		})
 	}
-
+	//TODO: create a middleware to validation
 	if req.Email == "" || req.Pass == "" || req.Name == "" {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
 			"error": "Email, password and name are required",
@@ -29,11 +28,10 @@ func CreateUser(c *fiber.Ctx) error {
 
 	u, err := usersServices.FindUser(req.Email)
 
-	if err != nil && err != sql.ErrNoRows {
+	if err != nil {
 		return c.Status(http.StatusInternalServerError).
 			JSON(fiber.Map{
-				"error": "error searching user, try later",
-				"e":     err.Error(),
+				"error": err.Error(),
 			})
 	}
 
@@ -58,8 +56,8 @@ func CreateUser(c *fiber.Ctx) error {
 }
 
 func AuthenticateUser(c *fiber.Ctx) error {
-	fmt.Print("entro")
 	var req user.UserLogin
+	//TODO: create a middleware to validation
 
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
@@ -81,7 +79,7 @@ func AuthenticateUser(c *fiber.Ctx) error {
 		})
 	}
 
-	if u.Pass != req.Pass || u.Email != req.Email {
+	if !passwordHashing.VerifyPassword(req.Pass, u.Pass) {
 		log.Printf("Intento de login fallido para el email: %s. Email enviado: %s, Email esperado: %s, Pass enviada: %s, Pass esperada: %s", req.Email, req.Email, u.Email, req.Pass, u.Pass)
 		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{
 			"error": "invalid credentials",
