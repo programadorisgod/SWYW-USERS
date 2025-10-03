@@ -28,6 +28,7 @@ func main() {
 
 	app.Post("/api/register", userController.CreateUser)
 	app.Post("/api/login", userController.AuthenticateUser)
+	app.Get("/api/users/:email", userController.GetUserByEmail)
 
 	log.Fatal(app.Listen(":5002"))
 }
