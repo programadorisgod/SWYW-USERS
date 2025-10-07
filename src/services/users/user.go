@@ -2,6 +2,7 @@ package usersServices
 
 import (
 	"database/sql"
+	"fmt"
 	"swyw-users/src/config"
 	user "swyw-users/src/models/users"
 	passwordHashing "swyw-users/src/utils/crypto"
@@ -33,12 +34,24 @@ func SaveUser(u *user.UserRegister) (int, error) {
 	return id, nil
 }
 
-func FindUser(email string) (*user.User, error) {
+func FindUser(field string, value string) (*user.User, error) {
 	var u user.User
 
+	allowedFields := map[string]bool{
+		"email": true,
+		"id":    true,
+	}
+
+	if !allowedFields[field] {
+		logger.Log.Warn("Field is not allowed", zap.String("field", field))
+		return nil, fmt.Errorf("invalid field: %s", field)
+	}
+
+	query := fmt.Sprintf("SELECT id, name, email,pass, create_at  FROM core.users WHERE %s = $1", field)
+
 	err := config.DB.QueryRow(
-		"SELECT id, name, email,pass, create_at  FROM core.users WHERE email = $1",
-		email,
+		query,
+		value,
 	).Scan(&u.Id, &u.Name, &u.Email, &u.Pass, &u.Create_at)
 
 	if err == sql.ErrNoRows {

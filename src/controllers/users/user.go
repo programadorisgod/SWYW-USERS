@@ -1,7 +1,9 @@
 package userController
 
 import (
+	"fmt"
 	"net/http"
+	"strconv"
 	user "swyw-users/src/models/users"
 	usersServices "swyw-users/src/services/users"
 	messageError "swyw-users/src/utils/Error"
@@ -30,7 +32,7 @@ func CreateUser(c *fiber.Ctx) error {
 		})
 	}
 
-	u, err := usersServices.FindUser(req.Email)
+	u, err := usersServices.FindUser("email", req.Email)
 
 	if err != nil {
 		logger.Log.Error("Error searching for user",
@@ -74,7 +76,7 @@ func AuthenticateUser(c *fiber.Ctx) error {
 		})
 	}
 
-	u, err := usersServices.FindUser(req.Email)
+	u, err := usersServices.FindUser("email", req.Email)
 
 	if err != nil {
 		logger.Log.Error("Error searching for user",
@@ -111,15 +113,36 @@ func AuthenticateUser(c *fiber.Ctx) error {
 
 }
 
-func GetUserByEmail(c *fiber.Ctx) error {
-	email := c.Params("email")
-	if email == "" {
+func GetUserByField(c *fiber.Ctx) error {
+	email := c.Query("email")
+	id := c.Query("id")
+
+	fmt.Println("Email:", email)
+	fmt.Println("Id:", id)
+
+	var u *user.User
+	var err error
+
+	if email == "" && id == "" {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
-			"error": "Email is required",
+			"error": "Email or Id is required",
 		})
 	}
 
-	u, err := usersServices.FindUser(email)
+	switch {
+	case email != "":
+		u, err = usersServices.FindUser("email", email)
+	case id != "":
+		_, convErr := strconv.Atoi(id)
+
+		if convErr != nil {
+			return c.Status(http.StatusBadRequest).JSON(fiber.Map{
+				"error": "Id must be a number",
+			})
+		}
+
+		u, err = usersServices.FindUser("id", id)
+	}
 
 	if err != nil {
 		logger.Log.Error("Error searching for user",
@@ -148,3 +171,41 @@ func GetUserByEmail(c *fiber.Ctx) error {
 		"user": userResp,
 	})
 }
+
+// func GetUserById(c *fiber.Ctx) error {
+// 	id := c.Params("id")
+// 	if id == "" {
+// 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
+// 			"error": "Email is required",
+// 		})
+// 	}
+
+// 	u, err := usersServices.FindUser("id", id)
+
+// 	if err != nil {
+// 		logger.Log.Error("Error searching for user",
+// 			zap.Error(err))
+// 		return c.Status(http.StatusInternalServerError).
+// 			JSON(fiber.Map{
+// 				"error": messageError.ErrSearchingForUser,
+// 			})
+// 	}
+
+// 	if u == nil {
+// 		return c.Status(http.StatusNotFound).JSON(fiber.Map{
+// 			"msg": "user not found",
+// 		})
+// 	}
+
+// 	userResp := user.UserResponse{
+// 		Id:        u.Id,
+// 		Name:      u.Name,
+// 		Email:     u.Email,
+// 		Create_at: u.Create_at,
+// 	}
+
+// 	logger.Log.Info("User get by email", zap.String("userEmail", userResp.Email))
+// 	return c.Status(http.StatusOK).JSON(fiber.Map{
+// 		"user": userResp,
+// 	})
+// }

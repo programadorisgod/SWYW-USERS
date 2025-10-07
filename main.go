@@ -28,7 +28,7 @@ func main() {
 
 	app.Post("/api/register", userController.CreateUser)
 	app.Post("/api/login", userController.AuthenticateUser)
-	app.Get("/api/users/:email", userController.GetUserByEmail)
+	app.Get("/api/users", userController.GetUserByField)
 
 	log.Fatal(app.Listen(":5002"))
 }
