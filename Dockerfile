@@ -18,19 +18,17 @@ COPY . .
 RUN go build -o user-service main.go
 
 
-RUN apk update && apk add --no-cache ca-certificates && \
-    apk add --no-cache wget
-
-
-
 #STAGE 2
 
 FROM alpine:3.19
 
 RUN apk update && apk add --no-cache ca-certificates && \
-    apk add --no-cache wget
+    apk add --no-cache wget \
+    && addgroup -g 1000 usergo && adduser -u 1000 -G usergo -s /bin/sh -D usergo
 
-WORKDIR /root/
+WORKDIR /app/
+
+USER usergo
 
 COPY --from=builder /app/user-service .
 
