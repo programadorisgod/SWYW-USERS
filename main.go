@@ -30,5 +30,5 @@ func main() {
 	app.Post("/api/login", userController.AuthenticateUser)
 	app.Get("/api/users", userController.GetUserByField)
 
-	log.Fatal(app.Listen(":5002"))
+	log.Fatal(app.Listen("0.0.0.0:5002"))
 }
