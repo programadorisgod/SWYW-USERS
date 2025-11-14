@@ -4,22 +4,19 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"os"
 
-	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
 
 var DB *sql.DB
 
 func InitDB() {
-	_ = godotenv.Load()
 
-	dbUser := os.Getenv("DB_USER")
-	password := os.Getenv("DB_APP_USER_PASSWORD")
-	host := os.Getenv("DB_HOST_AUTH")
-	dbname := os.Getenv("DB_NAME_AUTH")
-	port := os.Getenv("DB_PORT")
+	dbUser := Env.DBUser
+	password := Env.DBAppUserPassword
+	host := Env.DBHostAuth
+	dbname := Env.DBNameAuth
+	port := Env.DBPort
 
 	if dbUser == "" || password == "" || host == "" || dbname == "" || port == "" {
 		fmt.Print(dbUser, password, dbUser, dbname, port)
@@ -33,13 +30,13 @@ func InitDB() {
 	db, err := sql.Open("postgres", psqlInfo)
 
 	if err != nil {
-		log.Fatalf("❌ Could not connect to DB: %v", err)
+		fmt.Println("❌ Could not connect to DB: %v", err)
 	}
 
 	err = db.Ping()
 
 	if err != nil {
-		log.Fatalf("❌ Could not ping to DB: %v", err)
+		fmt.Println("❌ Could not ping to DB: %v", err)
 	}
 
 	fmt.Println("Successfully connected!")

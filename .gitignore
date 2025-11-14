@@ -1,3 +1,4 @@
 user-service
 /tmp
-#.env
+.env
+src/config/secrets.json

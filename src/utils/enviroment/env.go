@@ -1,6 +1,8 @@
 package enviroment
 
-import "os"
+import (
+	"swyw-users/src/config"
+)
 
 type AppMode string
 
@@ -10,7 +12,7 @@ const (
 )
 
 func GetAppMode() AppMode {
-	env := os.Getenv("APP_ENV")
+	env := config.Env.AppEnv
 
 	if env == "prod" {
 		return ProdMode

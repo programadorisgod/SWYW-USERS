@@ -11,6 +11,7 @@ import (
 )
 
 func main() {
+	config.LoadaEnv()
 	config.InitDB()
 	defer config.DB.Close()
 	app := fiber.New()
